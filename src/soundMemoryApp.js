@@ -7,7 +7,10 @@ const TONES = [
   { name: 'Chime', freq: 523.3, color: '#10b981', key: 'F', label: 'Chime Tone' },
 ];
 
+let speechMuted = false;
+
 function speak(text) {
+  if (speechMuted) return;
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
     const utter = new window.SpeechSynthesisUtterance(text);
@@ -184,6 +187,7 @@ export function setupSoundMemoryApp(root, onBack) {
     round = 1;
     acceptingInput = false;
     status.textContent = 'Get ready!';
+    speechMuted = false; // Allow speech for "Get ready!"
     speak('Round 1. Listen carefully.');
     vibrate(80);
     setTimeout(() => {
@@ -199,14 +203,15 @@ export function setupSoundMemoryApp(root, onBack) {
   function playSequence() {
     acceptingInput = false;
     userStep = 0;
-    let i = 0;
     status.textContent = `Round ${round}: Listen carefully.`;
-    speak(`Round ${round}. Listen carefully.`);
+    speechMuted = true; // Mute speech during sequence playback
+    speak(`Round ${round}. Listen carefully.`); // This will be skipped if muted
     vibrate(60);
     const playNext = () => {
       if (i >= sequence.length) {
         setTimeout(() => {
           status.textContent = 'Your turn!';
+          speechMuted = false; // Unmute speech for user input
           speak('Your turn!');
           acceptingInput = true;
         }, 400);
@@ -224,6 +229,7 @@ export function setupSoundMemoryApp(root, onBack) {
         }, 180);
       }, 500);
     };
+    let i = 0;
     playNext();
   }
 
@@ -248,6 +254,7 @@ export function setupSoundMemoryApp(root, onBack) {
       if (userStep === sequence.length) {
         acceptingInput = false;
         status.textContent = 'Correct!';
+        speechMuted = false;
         speak('Correct!');
         vibrate(80);
         setTimeout(() => {
@@ -259,11 +266,13 @@ export function setupSoundMemoryApp(root, onBack) {
     } else {
       acceptingInput = false;
       status.textContent = 'Try again!';
+      speechMuted = false;
       speak('Try again!');
       vibrate([100, 60, 100]);
       if (strictMode) {
         setTimeout(() => {
           status.textContent = 'Game over! Press Start to try again.';
+          speechMuted = false;
           speak('Game over! Press Start to try again.');
         }, 1200);
       } else {
@@ -279,5 +288,6 @@ export function setupSoundMemoryApp(root, onBack) {
   root._cleanupSoundMemory = () => {
     window.removeEventListener('keydown', keyHandler);
     window.speechSynthesis.cancel();
+    speechMuted = false;
   };
 }
